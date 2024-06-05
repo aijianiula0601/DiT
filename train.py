@@ -8,6 +8,7 @@
 A minimal training script for DiT using PyTorch DDP.
 """
 import torch
+import setproctitle
 
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
 torch.backends.cuda.matmul.allow_tf32 = True
@@ -112,6 +113,9 @@ def main(args):
     """
     Trains a new DiT model.
     """
+
+    setproctitle.setproctitle(args.process_name)
+
     assert torch.cuda.is_available(), "Training currently requires at least one GPU."
 
     # Setup DDP:
@@ -256,6 +260,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     # 数据集下载链接：https://zhuanlan.zhihu.com/p/654411008
     # 下载目录： /mnt/cephfs/hjh/common_dataset/images/imagenet
+    parser.add_argument("--process-name", type=str, required=False, default="DiT_training")
     parser.add_argument("--data-path", type=str, required=True)
     parser.add_argument("--results-dir", type=str, default="results")
     parser.add_argument("--model", type=str, choices=list(DiT_models.keys()), default="DiT-XL/2")
