@@ -33,6 +33,8 @@ from models import DiT_models
 from diffusion import create_diffusion
 from diffusers.models import AutoencoderKL
 
+Image.LOAD_TRUNCATED_IMAGES = True
+
 
 #################################################################################
 #                             Training Helper Functions                         #
