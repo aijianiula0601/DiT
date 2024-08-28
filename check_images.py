@@ -1,7 +1,9 @@
 import torch
-import setproctitle
+from tqdm import tqdm
 
 # the first flag below was False when we tested this script but True makes A100 training a lot faster:
+import sys
+
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 import torch.distributed as dist
@@ -16,12 +18,16 @@ from train import center_crop_arr
 dist.init_process_group("nccl")
 
 # data_path = '/mnt/cephfs/hjh/common_dataset/images/imagenet/ILSVRC2012_img_train'
-data_path = '/mnt/cephfs/hjh/common_dataset/images/imagenet/debug_dataset'
+# data_path = '/mnt/cephfs/hjh/common_dataset/images/imagenet/debug_dataset'
+data_path = sys.argv[1]
 
 global_batch_size = 2
-num_workers = 8
+num_workers = 96
 image_size = 256
 rank = dist.get_rank()
+
+read_error_image_files = "/tmp/img_error_files.txt"
+open_f = open(read_error_image_files, 'a', encoding='utf-8', buffering=1)
 
 
 class ImageFolderWithPaths(ImageFolder):
@@ -38,7 +44,9 @@ class ImageFolderWithPaths(ImageFolder):
             return tuple_with_path
 
         except (IOError, OSError, Image.DecompressionBombError) as e:
+            global open_f
             print(f"Skipping image at index {index}, path {self.imgs[index][0]}: {e}")
+            open_f.write(f"{self.imgs[index][0]}\n")
             return None
 
 
@@ -67,8 +75,9 @@ loader = DataLoader(
     drop_last=True
 )
 
-for x, y, p in loader:
-    print(f"x:{x}")
-    print(f"y:{y}")
-    print(f"p:{p}")
-    print("-" * 100)
+for x, y, p in tqdm(loader):
+    # print(f"x:{x}")
+    # print(f"y:{y}")
+    # print(f"p:{p}")
+    # print("-" * 100)
+    pass
