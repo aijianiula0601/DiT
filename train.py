@@ -107,6 +107,24 @@ def center_crop_arr(pil_image, image_size):
     return Image.fromarray(arr[crop_y: crop_y + image_size, crop_x: crop_x + image_size])
 
 
+class ImageFolderWithPaths(ImageFolder):
+    def __getitem__(self, index):
+        try:
+            # This is what ImageFolder normally returns
+            original_tuple = super(ImageFolderWithPaths, self).__getitem__(index)
+
+            # Get the image path
+            path = self.imgs[index][0]
+
+            # Make a new tuple that includes the original and the path
+            tuple_with_path = (original_tuple[0], original_tuple[1], path)
+            return tuple_with_path
+
+        except (IOError, OSError, Image.DecompressionBombError) as e:
+            print(f"Skipping image at index {index}, path {self.imgs[index][0]}: {e}")
+            return None
+
+
 #################################################################################
 #                                  Training Loop                                #
 #################################################################################
@@ -169,6 +187,7 @@ def main(args):
         transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True)
     ])
     dataset = ImageFolder(args.data_path, transform=transform)
+    # dataset = ImageFolderWithPaths(args.data_path, transform=transform)
     sampler = DistributedSampler(
         dataset,
         num_replicas=dist.get_world_size(),
